@@ -2,6 +2,8 @@
 
 
 using Intership_OOP_3.Predavanje_Domaci;
+using System;
+using System.Text;
 
 void SetUpPersonsAndEvents(List<Person> people, List<Event> events)
 {
@@ -99,15 +101,35 @@ void EventsThatHaveEnded(List<Event> events, List<Person> people)
             peopleThatHaveAtended = ReturnAllPeopleWhoAttendedTheEvent(item, people);
             peopleThatDidNotAtend = ReturnAllPeopleWhoDidNotAttendedTheEvent(item, people);
             Console.WriteLine("\n Ljudi koji su dosli na event: \n");
-            foreach(var person in peopleThatHaveAtended)
+            var sb = new StringBuilder("");
+            var last = peopleThatHaveAtended.Last();
+            foreach (var item2 in peopleThatHaveAtended)
             {
-                Console.WriteLine($"Ime: {person.Name} \n Prezime: {person.Surname} \n Email: {person.Email} \n");
+                if (!item2.Equals(last))
+                {
+                    sb.Append(item2.Email + ", ");
+                }
+                else
+                {
+                    sb.Append(item2.Email);
+                }
             }
+            Console.WriteLine(sb);
             Console.WriteLine("\n Ljudi koji nisu dosli na event: \n");
-            foreach (var person in peopleThatDidNotAtend)
+            sb = new StringBuilder("");
+            last = peopleThatDidNotAtend.Last();
+            foreach (var item2 in peopleThatDidNotAtend)
             {
-                Console.WriteLine($" Ime: {person.Name} \n Prezime: {person.Surname} \n Email: {person.Email} \n");
+                if (!item2.Equals(last))
+                {
+                    sb.Append(item2.Email + ", ");
+                }
+                else
+                {
+                    sb.Append(item2.Email);
+                }
             }
+            Console.WriteLine(sb);
         }
     }
 }
@@ -119,7 +141,7 @@ void SetPeopleWhoWillNotAttendAEvent(List<Event> events, List<Person> people)
     var temp = new Guid(eventToChange);
     Console.WriteLine("\n Unesi Emailove(razmak nakon svakog emaila, sve u istu liniju) \n ");
     var emails = Console.ReadLine();
-    string[] peopleEmails = emails.Split(' ');
+    var peopleEmails = emails.Split(' ');
     foreach(var item in peopleEmails)
     {
         events.Find(x => x.Id.ToString() == eventToChange).Emails.Remove(item);
@@ -148,6 +170,102 @@ void DeleteEvent(List<Event> events, List<Person> people)
     }
 }
 
+void CreateEvent(List<Event> events, List<Person> people)
+{
+    Console.WriteLine("\n Unese Ime eventa: \n");
+    var eventName = Console.ReadLine();
+    Console.WriteLine("\n Unese Lokaciju eventa: \n");
+    var eventLocation = Console.ReadLine();
+    Console.WriteLine("\n Unesi Pocenti Datum(x.x.xxxx): \n");
+    var eventBegginingDate = Console.ReadLine();
+    var eventBegginingDateParts = eventBegginingDate.Split('.');
+    int[] beggingDatepart = new int[3];
+    beggingDatepart[0] = int.Parse(eventBegginingDateParts[0]);
+    beggingDatepart[1] = int.Parse(eventBegginingDateParts[1]);
+    beggingDatepart[2] = int.Parse(eventBegginingDateParts[2]);
+    var begginingDate = new DateTime(beggingDatepart[2], beggingDatepart[1], beggingDatepart[0]);
+    Console.WriteLine("\n Unesi Zavrsni Datum(x.x.xxxx): \n");
+    var eventEndingDate = Console.ReadLine();
+    var eventEndingDateParts = eventEndingDate.Split('.');
+    int[] endingDatepart = new int[3];
+    endingDatepart[0] = int.Parse(eventEndingDateParts[0]);
+    endingDatepart[1] = int.Parse(eventEndingDateParts[1]);
+    endingDatepart[2] = int.Parse(eventEndingDateParts[2]);
+    var endingDate = new DateTime(endingDatepart[2], endingDatepart[1], endingDatepart[0]);
+    if(DateTime.Compare(begginingDate, endingDate) > 0)
+    {
+        Console.WriteLine("\n Kraj event je prije samog pocetka! \n");
+        while (true)
+        {
+            Console.WriteLine("\n Unesi Zavrsni Datum(x.x.xxxx): \n");
+            eventEndingDate = Console.ReadLine();
+            eventEndingDateParts = eventEndingDate.Split('.');
+            endingDatepart[0] = int.Parse(eventEndingDateParts[0]);
+            endingDatepart[1] = int.Parse(eventEndingDateParts[1]);
+            endingDatepart[2] = int.Parse(eventEndingDateParts[2]);
+            endingDate = new DateTime(endingDatepart[2], endingDatepart[1], endingDatepart[0]);
+            if(DateTime.Compare(begginingDate, endingDate) < 0)
+            {
+                break;
+            }
+        }
+    }
+    Console.WriteLine("\n Unesi emailove svih ljudi koji dolaze: \n");
+    var emailsOfPeople = Console.ReadLine();
+    string[] emailsOfPeopleSplit = emailsOfPeople.Split(' ');
+    var listOfPeople = new List<string>();
+    var listOfPeople2 = new List<string>(); 
+    for(var i = 0; i < emailsOfPeopleSplit.Length ;i++)
+    {
+        var temp = people.Find(x => x.Email == emailsOfPeopleSplit[i]);
+        if(temp is null)
+        {
+            Console.WriteLine("\n Osobe nepostoji! Nece biti dodana! \n");
+        }
+        else
+        {
+            listOfPeople.Add(emailsOfPeopleSplit[i]);
+        }
+    }
+    foreach(var item in listOfPeople)
+    {
+        var flag = false;
+        var listOfEvenets = (
+          from temp in events
+          where temp.Emails.Contains(item)
+          select temp
+        ).ToList();
+        foreach(var item2 in listOfEvenets)
+        {
+            if((DateTime.Compare(begginingDate, item2.BegginingDate) > 0) && (DateTime.Compare(endingDate, item2.EndDate) < 0))
+            {
+                flag = true; 
+                break;
+            }
+        }
+        if (flag)
+        {
+            Console.WriteLine($"\n Sudionik sa: {item} nemoze pristupiti jer ide na neki drugi event! \n");
+        }
+        else
+        {
+            listOfPeople2.Add(item);
+        }
+    }
+    if(listOfPeople2.Count == 0)
+    {
+        Console.WriteLine("\n Nitko nedolazi na event pa je otkazan! \n");
+        return;
+    }
+    var newEvent = new Event(eventName, eventLocation, begginingDate, endingDate);
+    newEvent.SetEventEmails(listOfPeople2);
+    events.Add(newEvent);
+    foreach(var item in listOfPeople2)
+    {
+        people.Find(x => x.Email == item).Events.Add(newEvent.Id, true);
+    }
+}
+
 void ActiveEvents(List<Event> events, List<Person> people)
 {
     foreach(var item in events)
@@ -156,10 +274,20 @@ void ActiveEvents(List<Event> events, List<Person> people)
         {
             Console.WriteLine($"\n ID: {item.Id} \n Naziv: {item.Name} \n Lokacija: {item.Location} \n Zavrsave za: {(item.EndDate - DateTime.Now).Days} d");
             Console.WriteLine("\n \n Sudionici: \n \n");
-            foreach(var person in item.Emails)
+            var sb = new StringBuilder("");
+            var last = item.Emails.Last();
+            foreach (var item2 in item.Emails)
             {
-                Console.WriteLine($"Sudionik: {person}");
+                if (!item2.Equals(last))
+                {
+                    sb.Append(item2 + ", ");
+                }
+                else
+                {
+                    sb.Append(item2);
+                }
             }
+            Console.WriteLine(sb);
         }
     }
 }
@@ -172,10 +300,20 @@ void UpCommingEvents(List<Event> events, List<Person> people)
         {
             Console.WriteLine($"\n ID: {item.Id} \n Naziv: {item.Name} \n Lokacija: {item.Location} \n Pocinje za: {(item.BegginingDate - DateTime.Now).Days} d \n Trajanje: {(item.EndDate - item.BegginingDate).TotalHours} h \n");
             Console.WriteLine("\n \n Sudionici: \n \n");
-            foreach (var person in item.Emails)
+            var sb = new StringBuilder("");
+            var last = item.Emails.Last();
+            foreach (var item2 in item.Emails)
             {
-                Console.WriteLine($"Sudionik: {person}");
+                if (!item2.Equals(last))
+                {
+                    sb.Append(item2 + ", ");
+                }
+                else
+                {
+                    sb.Append(item2);
+                }
             }
+            Console.WriteLine(sb);
         }
     }
 }
@@ -222,6 +360,7 @@ void Start()
         var eventForChange = "";
         var emails = "";
         var flag = false;
+        var conformationInput = "";
         switch (input)
         {
             case "1":
@@ -234,8 +373,21 @@ void Start()
                     switch (input)
                     {
                         case "1":
-                            SetPeopleWhoWillNotAttendAEvent(events, people);
-                            firstMenuFlag = true;
+                            Console.WriteLine("\n Jesi siguran da zelis odraditi ovu akciju(Y - Da \t N - NE)? \n");
+                            conformationInput = Console.ReadLine();
+                            if(conformationInput.ToLower() is "y")
+                            {
+                                SetPeopleWhoWillNotAttendAEvent(events, people);
+                                firstMenuFlag = true;
+                            }
+                            else if(conformationInput.ToLower() is "n")
+                            {
+                                Console.WriteLine("\n Otkazivanje radnje \n");
+                            }
+                            else
+                            {
+                                Console.WriteLine("\n Nedozvoljeni input! \n");
+                            }
                             break;
                         case "2":
                             firstMenuFlag = true;
@@ -260,12 +412,38 @@ void Start()
                     switch (input)
                     {
                         case "1":
-                            DeleteEvent(events, people);
-                            secondMenuFlag= true;
+                            Console.WriteLine("\n Jesi siguran da zelis odraditi ovu akciju(Y - Da \t N - NE)? \n");
+                            conformationInput = Console.ReadLine();
+                            if (conformationInput.ToLower() is "y")
+                            {
+                                DeleteEvent(events, people);
+                                secondMenuFlag = true;
+                            }
+                            else if (conformationInput.ToLower() is "n")
+                            {
+                                Console.WriteLine("\n Otkazivanje radnje \n");
+                            }
+                            else
+                            {
+                                Console.WriteLine("\n Nedozvoljeni input! \n");
+                            }
                             break;
                         case "2":
-                            RemovePeopleFromEvent(events, people);
-                            secondMenuFlag = true;
+                            Console.WriteLine("\n Jesi siguran da zelis odraditi ovu akciju(Y - Da \t N - NE)? \n");
+                            conformationInput = Console.ReadLine();
+                            if (conformationInput.ToLower() is "y")
+                            {
+                                RemovePeopleFromEvent(events, people);
+                                secondMenuFlag = true;
+                            }
+                            else if (conformationInput.ToLower() is "n")
+                            {
+                                Console.WriteLine("\n Otkazivanje radnje \n");
+                            }
+                            else
+                            {
+                                Console.WriteLine("\n Nedozvoljeni input! \n");
+                            }
                             break;
                             case "3":
                             secondMenuFlag = true;
@@ -284,7 +462,20 @@ void Start()
                 EventsThatHaveEnded(events, people);
                 break;
             case "4":
-                Console.WriteLine("4");
+                Console.WriteLine("\n Jesi siguran da zelis odraditi ovu akciju(Y - Da \t N - NE)? \n");
+                conformationInput = Console.ReadLine();
+                if (conformationInput.ToLower() is "y")
+                {
+                    CreateEvent(events, people);
+                }
+                else if (conformationInput.ToLower() is "n")
+                {
+                    Console.WriteLine("\n Otkazivanje radnje \n");
+                }
+                else
+                {
+                    Console.WriteLine("\n Nedozvoljeni input! \n");
+                }
                 break;
             case "5":
                 flag = true;
